@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi.middleware.cors import CORSMiddleware
 import statistics
 
-# --- Database Setup ---
+# db setup
 DATABASE_URL = "sqlite:///./calculator.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -22,12 +22,12 @@ class CalculationHistory(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# --- Data Models ---
+# data models 
 class CalculationRequest(BaseModel):
     numbers: List[float]
     operation: str
 
-# --- App Setup ---
+# app setup 
 app = FastAPI()
 
 app.add_middleware(
@@ -45,7 +45,7 @@ def get_db():
     finally:
         db.close()
 
-# --- API Endpoints ---
+# API Endpoints
 
 @app.post("/calculate")
 def perform_calculation(req: CalculationRequest, db: Session = Depends(get_db)):
@@ -62,9 +62,11 @@ def perform_calculation(req: CalculationRequest, db: Session = Depends(get_db)):
     elif req.operation == "MAX":
         result = max(nums)
     elif req.operation == "MIN":
-        result = min(nums)
+        result = min(nums) 
     elif req.operation == "MULTIPLY":
         result = 1
+      
+
         for n in nums:
             result *= n
     elif req.operation == "MOD":
@@ -76,15 +78,15 @@ def perform_calculation(req: CalculationRequest, db: Session = Depends(get_db)):
                     raise HTTPException(status_code=400, detail="Cannot divide by zero.")
             result %= nums[i]
     
-    # Save to DB
+    # saving to db
     db_record = CalculationHistory(inputs=nums, operation=req.operation, result=result)
     db.add(db_record)
     db.commit()
 
-    return {"result": result, "message": "Success"}
+    return {"result": result, "message": "Success"} 
 
-# [NEW] Endpoint to get history
+# endpoint to get history
 @app.get("/history")
 def get_history(db: Session = Depends(get_db)):
-    # Get all records, ordered by newest first
+    # getting all records, ordered by newest first
     return db.query(CalculationHistory).order_by(CalculationHistory.id.desc()).all()
